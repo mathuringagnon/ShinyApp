@@ -1,0 +1,253 @@
+---
+title: "Historical vs Currrent"
+output: html_document
+---
+
+### The Contiguous United States
+
+##### Ecosystems are constantly changing and adapting whether it's slowly and minutely or abrubtly and drastically. Changes  
+
+
+#### Comparison of ecosystems historically vs now
+
+```{r}
+library(sf)
+library(ggplot2)
+library(DataCombine)
+library(reshape2)
+library(plotly)
+
+comp <- UsedData
+
+#renaming columns
+
+colnames(comp)[colnames(comp)=="ORIGINAL"] <- "ACRES_HIST"
+
+colnames(comp)[colnames(comp)=="NotAG_DEV"] <- "ACRES_CURR"
+
+colnames(comp)[colnames(comp)=="BPS_NAME"] <- "CLASSNAME"
+
+#reordering by classname
+
+comp <- arrange(comp, CLASSNAME)
+
+#removing weird row
+
+#comp <- comp[-c(393), -c(5)]
+
+#assigning NA values to 0 in AG and DEV rows
+
+comp[c("AG", "DEV")][is.na(comp[c("AG", "DEV")])] <- 0
+
+
+
+#adding diff column
+
+comp$DIFF <- abs(comp$ACRES_HIST - comp$ACRES_CURR)
+
+#adding percent change column
+
+comp$PER_CHANGE <- round((comp$DIFF / comp$ACRES_HIST) * 100, 2)
+
+#comp$PER_CHANGE[!is.finite(comp$PER_CHANGE)] <- 100
+
+#head(comp$PER_CHANGE)
+
+#head(comp)
+#tail(comp)
+
+#p <- plot_ly(comp, x = ~ACRES_CURR, y = ~DIFF, text = ~paste("Ecosystem: ", CLASSNAME, "<br> Historical Acres: ", ACRES_HIST))
+
+#p
+
+#totalAcres <- sum(comp$ACRES_HIST)
+
+#comp <- comp[!(sum(comp$ACRES_HIST) >=  ]
+
+#comp.long <- melt(comp)
+
+#colnames(comp.long)[colnames(comp.long) == "value"] <- "ACRES"
+
+
+#eco <- ggplot(comp.long, aes(fill = variable, y = ACRES, x = reorder(CLASSNAME, ACRES, function(x){sum(x)}))) + geom_bar(position = "dodge", stat="identity") + coord_flip() + xlab("Ecosystem")
+
+
+#eco
+
+```
+
+
+
+```{r}
+library(dplyr)
+#Preparing Map Data for use
+
+allDataMap <- MapData
+
+#removing the value and us_140 columns
+allDataMap <- allDataMap[-c(1, 4)]
+
+
+
+#taking out all values with urban in the name
+
+urbanMap <- allDataMap %>%
+    filter(
+      grepl('Urban', DESCRIPTIO)
+    )
+
+#changing label and description to urban for simplicity
+urbanMap$DESCRIPTIO <- 'Urban'
+urbanMap$LABEL <- 'Urban'
+
+#summing the count column by GEOID10 column
+urbanCntys <- urbanMap[c(1, 2)]
+
+urbanMap <- urbanMap[-c(1)]
+
+urbanCntys <- urbanCntys %>%
+    group_by(CNTYS) %>%
+      summarise(COUNT = sum(COUNT))
+
+urbanMap <- merge(urbanMap, urbanCntys, by = 'CNTYS')
+
+urbanMap <- urbanMap[!duplicated(urbanMap),]
+
+
+
+
+#doing the same thing but for AG
+
+agMap <- allDataMap %>%
+    filter(
+      grepl('Agriculture', DESCRIPTIO)
+    )
+
+#changing label and description to urban for simplicity
+agMap$DESCRIPTIO <- 'Agriculture'
+agMap$LABEL <- 'Agriculture'
+
+#summing the count column by GEOID10 column
+urbanCntys <- agMap[c(1, 2)]
+
+agMap <- agMap[-c(1)]
+
+urbanCntys <- urbanCntys %>%
+    group_by(CNTYS) %>%
+      summarise(COUNT = sum(COUNT))
+
+agMap <- merge(agMap, urbanCntys, by = 'CNTYS')
+
+agMap <- agMap[!duplicated(agMap),]
+
+
+
+
+
+#doing more or less the same thing but for everything not agriculture or urban
+
+naturalMap <- allDataMap %>% 
+    filter(
+      !grepl("Agriculture|Urban", DESCRIPTIO)
+    )
+
+#changing label and description to urban for simplicity
+naturalMap$DESCRIPTIO <- 'Natural'
+naturalMap$LABEL <- 'Natural'
+
+#summing the count column by GEOID10 column
+naturalCntys <- naturalMap[c(1, 2)]
+
+naturalMap <- naturalMap[-c(1)]
+
+naturalCntys <- naturalCntys %>%
+    group_by(CNTYS) %>%
+      summarise(COUNT = sum(COUNT))
+
+naturalMap <- merge(naturalMap, naturalCntys, by = 'CNTYS')
+
+naturalMap <- naturalMap[!duplicated(naturalMap),]
+    
+
+
+#starting to merge all data back into a complete map
+completeMap <- naturalMap
+
+
+completeMap <- rbind(completeMap, urbanMap, agMap)
+
+
+
+
+#creating a  total county acres column
+
+countyTotal <- select( completeMap, CNTYS, COUNT)
+
+#summing each count for each label
+
+countyTotal <- countyTotal %>%
+  group_by(CNTYS) %>%
+    summarise(COUNT = sum(COUNT))
+
+#renaming to TOTALS
+colnames(countyTotal)[colnames(countyTotal)=="COUNT"] <- "TOTAL"
+
+
+#adding column back in so each row has a total for whichever county it has
+completeMap <- merge(completeMap, countyTotal, by = 'CNTYS')
+
+#math to add percent column
+
+completeMap$PER_of_CNTY <- round(completeMap$COUNT/completeMap$TOTAL *100, 2) 
+
+
+```
+
+
+
+```{r}
+library(rgdal)
+library(ggplot2)
+
+
+
+#Qick Map
+
+#read da data
+
+usMap <- readOGR(dsn = ".", layer ="tl_2019_us_county", stringsAsFactors = FALSE)
+
+stateFP <- usMap$STATEFP
+
+usMap <- usMap[!usMap$STATEFP %in% c("02", "15", "72", "66", "78", "60", "69",
+                                        "64", "68", "70", "74"),]
+
+usMap <- usMap[!usMap$STATEFP %in% c("81", "84", "86", "87", "89", "71", "76",
+                                        "95", "79"),]
+
+#counties <- st_read("tl_2019_us_county.shp")
+
+#make a jankey map (will have AK and other areas so will look too spread out, but you get the idea)
+
+ 
+#making a map
+
+#ggplot() +
+
+  #geom_sf(data = usMap, fill="#69b3a2", color="grey") +
+
+  #theme_void()
+```
+
+```{r}
+library(dplyr)
+library(leaflet)
+#plot(usMap)
+
+leaflet() %>%
+  addTiles() %>%
+    addProviderTiles(providers$OpenStreetMap) %>%
+      addPolygons(data = usMap, fill = FALSE)
+
+```
+
