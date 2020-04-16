@@ -200,14 +200,29 @@ completeMap <- merge(completeMap, countyTotal, by = 'CNTYS')
 
 completeMap$PER_of_CNTY <- round(completeMap$COUNT/completeMap$TOTAL *100, 2) 
 
+#making acres column
+
+completeMap$ACRES <- completeMap$COUNT *0.222
+
+completeMap$ACRES_TOTAL <- completeMap$TOTAL *0.222
+
+#exporting data as a .csv
+#write.csv(completeMap,"C:\\Users\\User\\Desktop\\completeMap.csv", row.names = TRUE)
 
 ```
 
 
 
 ```{r}
-library(rgdal)
+library(sf)
 library(ggplot2)
+library(sp)
+library(rgeos)
+library(rgdal)
+library(maptools)
+library(dplyr)
+library(leaflet)
+library(scales)
 
 
 
@@ -215,9 +230,9 @@ library(ggplot2)
 
 #read da data
 
-usMap <- readOGR(dsn = ".", layer ="tl_2019_us_county", stringsAsFactors = FALSE)
+usMap <- readOGR(dsn = "./tl_2019_us_county.shp", layer ="tl_2019_us_county", stringsAsFactors = FALSE)
 
-stateFP <- usMap$STATEFP
+#stateFP <- usMap$STATEFP
 
 usMap <- usMap[!usMap$STATEFP %in% c("02", "15", "72", "66", "78", "60", "69",
                                         "64", "68", "70", "74"),]
@@ -227,6 +242,15 @@ usMap <- usMap[!usMap$STATEFP %in% c("81", "84", "86", "87", "89", "71", "76",
 
 #counties <- st_read("tl_2019_us_county.shp")
 
+#renaming GEOID10 to GEOID in completeMap data set to prepare for merge
+
+colnames(countyTotal)[colnames(countyTotal)=="GEOID10"] <- "GEOID"
+
+#add leading zeos to any FIPS code that's less than 5 digits long to get a good match.
+completeMap$GEOID <- formatC(completeMap$GEOID, width = 5, format = "d", flag = "0")
+
+
+ 
 #make a jankey map (will have AK and other areas so will look too spread out, but you get the idea)
 
  
@@ -234,20 +258,22 @@ usMap <- usMap[!usMap$STATEFP %in% c("81", "84", "86", "87", "89", "71", "76",
 
 #ggplot() +
 
-  #geom_sf(data = usMap, fill="#69b3a2", color="grey") +
+  #geom_sf(data = leafMap, fill="#69b3a2", color="grey") +
 
   #theme_void()
 ```
 
 ```{r}
+library(RColorBrewer)
 library(dplyr)
 library(leaflet)
 #plot(usMap)
 
-leaflet() %>%
+color <- brewer.pal(9, "Spectral")
+
+leaflet(data = usMap) %>%
   addTiles() %>%
-    addProviderTiles(providers$OpenStreetMap) %>%
-      addPolygons(data = usMap, fill = FALSE)
+    addPolygons(fill = FALSE)
 
 ```
 

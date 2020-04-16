@@ -1,4 +1,4 @@
-library(ggvis)
+alibrary(ggvis)
 
 # For dropdown menu
 actionLink <- function(inputId, ...) {
