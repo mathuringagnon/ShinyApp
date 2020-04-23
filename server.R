@@ -1,6 +1,10 @@
 library(ggvis)
 library(dplyr)
-if (FALSE) {
+library(shiny)
+library(leaflet)
+library(htmltools)
+library(viridis)
+if(FALSE) {
     library(RSQLite)
     library(dbplyr)
 }
@@ -121,5 +125,118 @@ function(input, output, session) {
     
     output$n_ecosystems <- renderText({ nrow(ecosystems()) })
     
+
     
+    
+    
+    #CREATING MAP
+    
+    bin <- c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
+    
+    pal <- colorNumeric(palette = "viridis", domain = range(0,100), reverse = TRUE, na.color = "red")
+    
+    #completeData <- leafMap
+    
+    
+    #filtering map data to what is selected
+    
+    output$shinyMap <- renderLeaflet({
+      
+      #temp variables to select data from
+      #minPercent <- input$percentSelect[1]
+      #maxPercent <- input$percentSelect[2]
+      selected <- input$colorBy
+      
+      filteredData <- leafMap
+      
+      #filter out ag, urban, and natural based on selected and rename columns
+      if(selected == 1){
+        #if they selected natural
+        filteredData$ACRES_AG <- NULL
+        filteredData$ACREs_URBAN <- NULL
+        filteredData$PERCENT_AG <- NULL
+        filteredData$PERCENT_URBAN <-NULL
+        
+        colnames(filteredData)[colnames(filteredData)=="ACRES_NAT"] <- "ACRES"
+        colnames(filteredData)[colnames(filteredData)=="PERCENT_NAT"] <- "PERCENT"  
+        
+      } else if(selected == 2){
+        #if they selected Agriculture
+        filteredData$ACRES_NAT <- NULL
+        filteredData$ACREs_URBAN <- NULL
+        filteredData$PERCENT_NAT <- NULL
+        filteredData$PERCENT_URBAN <-NULL
+        
+        colnames(filteredData)[colnames(filteredData)=="ACRES_AG"] <- "ACRES"
+        colnames(filteredData)[colnames(filteredData)=="PERCENT_AG"] <- "PERCENT" 
+      
+      } else{
+        #if they selected urban
+        filteredData$ACRES_AG <- NULL
+        filteredData$ACREs_NAT <- NULL
+        filteredData$PERCENT_AG <- NULL
+        filteredData$PERCENT_NAT <-NULL
+        
+        colnames(filteredData)[colnames(filteredData)=="ACRES_URBAN"] <- "ACRES"
+        colnames(filteredData)[colnames(filteredData)=="PERCENT_URBAN"] <- "PERCENT" 
+        
+      }
+      
+      #adjusting label to what button is selected
+      if(selected == 1){
+        lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%g Natural Acres", filteredData$CNTYS, filteredData$PERCENT, filteredData$ACRES) %>%
+          lapply(HTML)
+      } else if(selected == 2){
+        lab = sprintf("<strong>%s County</strong><br/>%g%% Agriculture <br/>%g Acres of Agriculture", filteredData$CNTYS, filteredData$PERCENT, filteredData$ACRES) %>%
+          lapply(HTML)
+      } else{
+        lab = sprintf("<strong>%s County</strong><br/>%g%% Urban <br/>%g Urban Acres", filteredData$CNTYS, filteredData$PERCENT, filteredData$ACRES) %>%
+          lapply(HTML)
+      }
+      
+      #merging filtered data to map
+      #finalData <- merge(usMap, filteredData, by = "GEOID")
+      
+      
+      map <- leaflet(data = finalData) %>%
+        addPolygons(weight = 1,
+                    smoothFactor = 0.02,
+                    fillOpacity = 0.9,
+                    color = ~pal(PERCENT),
+                    highlight = highlightOptions(
+                      weight = 3,
+                      color = "#666",
+                      fillOpacity = 1,
+                      bringToFront = TRUE),
+                    label = lab,
+                    labelOptions =labelOptions(textsize = "15px")) %>%
+        
+        addLegend(pal = pal,
+                  values = ~PERCENT,
+                  bins = bin,
+                  opacity = 0.7,
+                  title = NULL,
+                  position = "bottomright")
+      
+      #filteredData <- filteredData %>% 
+        #filter(
+          #PERCENT >= minPercent,
+          #PERCENT <= maxPercent
+        #)
+      
+      #filteredData <- as.data.frame(filteredData)
+    })
+     
+     
+    #output$testingTable <- finalData
+     
+     
+    
+    
+    
+   
+    
+    
+  
+        
 }

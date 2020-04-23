@@ -1,17 +1,19 @@
-alibrary(ggvis)
+library(ggvis)
+library(shiny)
+library(leaflet)
 
 # For dropdown menu
-actionLink <- function(inputId, ...) {
-    tags$a(href='javascript:void',
-           id=inputId,
-           class='action-button',
-           ...)
-}
+#actionLink <- function(inputId, ...) {
+ #   tags$a(href='javascript:void',
+  #         id=inputId,
+   #        class='action-button',
+    #       ...)
+#}
 
-navbarPage("Ecosystem Comparison",
+navbarPage("US Land Exploration",
     
 
-   tabPanel("Home", 
+   tabPanel("Graph", 
         titlePanel("Ecosystem explorer"),
         fluidRow(
             column(3,
@@ -58,8 +60,16 @@ navbarPage("Ecosystem Comparison",
         )
     ),
    
-    tabPanel("US Map", 
-             titlePanel("This is an example to see if this works"),
-             
+    tabPanel("US Map",
+        leafletOutput("shinyMap", width = "100%", height = "100%"),
+        
+        absolutePanel(bottom = 10, left = 10,
+            radioButtons("colorBy", label = h4("Color by: "),
+                          choices = list("Percent Natural" = 1, "Percent Agriculture" = 2, "Percent Urban" = 3), 
+                          selected = 1)
+            #sliderInput("percentSelect", "Percent",
+            #            0, 100, c(0, 100), step = 0.01),
+            #span("Number of Counties Shown: ", textOutput("n_counties"))
+            )
     )
 )

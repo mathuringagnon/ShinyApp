@@ -80,6 +80,7 @@ comp$PER_CHANGE <- round((comp$DIFF / comp$ACRES_HIST) * 100, 2)
 
 ```{r}
 library(dplyr)
+library(tidyr)
 #Preparing Map Data for use
 
 allDataMap <- MapData
@@ -176,7 +177,9 @@ completeMap <- naturalMap
 
 completeMap <- rbind(completeMap, urbanMap, agMap)
 
+#taking out DESCRIPTIO column
 
+completeMap$DESCRIPTIO <- NULL
 
 
 #creating a  total county acres column
@@ -196,15 +199,43 @@ colnames(countyTotal)[colnames(countyTotal)=="COUNT"] <- "TOTAL"
 #adding column back in so each row has a total for whichever county it has
 completeMap <- merge(completeMap, countyTotal, by = 'CNTYS')
 
-#math to add percent column
 
-completeMap$PER_of_CNTY <- round(completeMap$COUNT/completeMap$TOTAL *100, 2) 
+#making completeMap data set long to be able to add to shape file
 
-#making acres column
+completeMap <- spread(completeMap, key = LABEL, value = COUNT)
 
-completeMap$ACRES <- completeMap$COUNT *0.222
 
-completeMap$ACRES_TOTAL <- completeMap$TOTAL *0.222
+#rename columns to make more sense (I'm making them say ACRES because I'm going to change them to acres later but for now I'm leaving it as the original count value)
+
+colnames(completeMap)[colnames(completeMap)=="Agriculture"] <- "ACRES_AG"
+
+colnames(completeMap)[colnames(completeMap)=="Natural"] <- "ACRES_NAT"
+
+colnames(completeMap)[colnames(completeMap)=="Urban"] <- "ACRES_URBAN"
+
+#math to add percent columns
+
+completeMap$PERCENT_AG <- round(completeMap$ACRES_AG/completeMap$TOTAL *100, 2) 
+
+completeMap$PERCENT_URBAN <- round(completeMap$ACRES_URBAN/completeMap$TOTAL *100, 2) 
+
+completeMap$PERCENT_NAT <- round(completeMap$ACRES_NAT/completeMap$TOTAL *100, 2) 
+
+
+#changing acres columns to acutal acres values using the conversion of 0.222
+
+completeMap$ACRES_AG <- completeMap$ACRES_AG *0.222
+
+completeMap$ACRES_NAT <- completeMap$ACRES_NAT *0.222
+
+completeMap$ACRES_URBAN <- completeMap$ACRES_URBAN *0.222
+
+completeMap$TOTAL <- completeMap$TOTAL *0.222
+
+
+#making the data wide
+
+
 
 #exporting data as a .csv
 #write.csv(completeMap,"C:\\Users\\User\\Desktop\\completeMap.csv", row.names = TRUE)
@@ -243,14 +274,14 @@ usMap <- usMap[!usMap$STATEFP %in% c("81", "84", "86", "87", "89", "71", "76",
 #counties <- st_read("tl_2019_us_county.shp")
 
 #renaming GEOID10 to GEOID in completeMap data set to prepare for merge
-
-colnames(countyTotal)[colnames(countyTotal)=="GEOID10"] <- "GEOID"
+colnames(completeMap)[colnames(completeMap)=="GEOID10"] <- "GEOID"
 
 #add leading zeos to any FIPS code that's less than 5 digits long to get a good match.
 completeMap$GEOID <- formatC(completeMap$GEOID, width = 5, format = "d", flag = "0")
 
 
- 
+
+leafMap <- merge(usMap, completeMap, by = "GEOID") 
 #make a jankey map (will have AK and other areas so will look too spread out, but you get the idea)
 
  
@@ -264,16 +295,44 @@ completeMap$GEOID <- formatC(completeMap$GEOID, width = 5, format = "d", flag = 
 ```
 
 ```{r}
-library(RColorBrewer)
+library(htmltools)
+library(viridis)
 library(dplyr)
 library(leaflet)
 #plot(usMap)
 
-color <- brewer.pal(9, "Spectral")
+#filteredData <- completeMap[-c(6, 7, 10, 9)]
 
-leaflet(data = usMap) %>%
-  addTiles() %>%
-    addPolygons(fill = FALSE)
+#making a color Palette
+bin <- c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
 
+pal <- colorNumeric(palette = "viridis", domain = range(0,100), reverse = TRUE, na.color = "red")
+
+lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%g Natural Acres", leafMap$CNTYS, leafMap$PERCENT_NAT, leafMap$ACRES_NAT) %>%
+    lapply(HTML)
+
+
+#leaflet(data = leafMap) %>%
+  #addTiles() %>%
+    #addPolygons(weight = 1,
+    #    smoothFactor = 0.02,
+    #    fillOpacity = 0.9,
+    #    color = ~pal(PERCENT_NAT),
+    #    highlight = highlightOptions(
+    #      weight = 3,
+    #      color = "#666",
+    #      fillOpacity = 1,
+    #      bringToFront = TRUE),
+  #      label = lab,
+  #      labelOptions =labelOptions(textsize = "15px")) %>%
+      
+    #addLegend(pal = pal,
+     #   values = ~PERCENT_NAT,
+     #   bins = bin,
+     #   opacity = 0.7,
+     #   title = NULL,
+     #  position = "bottomright")
 ```
+
+
 
