@@ -1,6 +1,7 @@
 library(ggvis)
 library(shiny)
 library(leaflet)
+library(htmltools)
 
 # For dropdown menu
 #actionLink <- function(inputId, ...) {
@@ -59,17 +60,17 @@ navbarPage("US Land Exploration",
             )
         )
     ),
-   
     tabPanel("US Map",
-        leafletOutput("shinyMap", width = "100%", height = "100%"),
-        
+        leafletOutput("shinyMap", width = "100%", height = "800px"
+                        ),
         absolutePanel(bottom = 10, left = 10,
-            radioButtons("colorBy", label = h4("Color by: "),
-                          choices = list("Percent Natural" = 1, "Percent Agriculture" = 2, "Percent Urban" = 3), 
-                          selected = 1)
+            radioButtons("colorBy", label = h3("Color by: "),
+                          choices = list("Percent Natural" = 1, "Percent Agriculture" = 2, "Percent Urban" = 3),
+                          selected = 1
+                         )
             #sliderInput("percentSelect", "Percent",
             #            0, 100, c(0, 100), step = 0.01),
             #span("Number of Counties Shown: ", textOutput("n_counties"))
-            )
+        )
     )
 )

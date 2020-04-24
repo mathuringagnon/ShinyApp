@@ -4,6 +4,9 @@ library(shiny)
 library(leaflet)
 library(htmltools)
 library(viridis)
+library(sf)
+library(sp)
+library(htmlwidgets)
 if(FALSE) {
     library(RSQLite)
     library(dbplyr)
@@ -118,7 +121,7 @@ function(input, output, session) {
             #add_legend("stroke", title = "Won Oscar", values = c("Yes", "No")) %>%
             #scale_nominal("stroke", domain = c("Yes", "No"),
              #             range = c("orange", "#aaa")) %>%
-            set_options(width = 500, height = 500)
+            set_options(width = 800, height = 500)
     })
     
     vis %>% bind_shiny("plot1")
@@ -137,68 +140,48 @@ function(input, output, session) {
     
     #completeData <- leafMap
     
-    
-    #filtering map data to what is selected
+    shinyMap <- leafMap
     
     output$shinyMap <- renderLeaflet({
-      
+
       #temp variables to select data from
       #minPercent <- input$percentSelect[1]
       #maxPercent <- input$percentSelect[2]
       selected <- input$colorBy
-      
-      filteredData <- leafMap
-      
-      #filter out ag, urban, and natural based on selected and rename columns
+
+      #make the value lab exist
+      lab
+
+      #rename selected columns and create selected labels
       if(selected == 1){
         #if they selected natural
-        filteredData$ACRES_AG <- NULL
-        filteredData$ACREs_URBAN <- NULL
-        filteredData$PERCENT_AG <- NULL
-        filteredData$PERCENT_URBAN <-NULL
-        
-        colnames(filteredData)[colnames(filteredData)=="ACRES_NAT"] <- "ACRES"
-        colnames(filteredData)[colnames(filteredData)=="PERCENT_NAT"] <- "PERCENT"  
-        
+        colnames(shinyMap@data)[colnames(shinyMap@data)=="PERCENT_NAT"] <- "PERCENT"
+
+        lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%g Natural Acres", shinyMap$NAME10, shinyMap$PERCENT, shinyMap$ACRES_NAT) %>%
+          lapply(HTML)
+
       } else if(selected == 2){
         #if they selected Agriculture
-        filteredData$ACRES_NAT <- NULL
-        filteredData$ACREs_URBAN <- NULL
-        filteredData$PERCENT_NAT <- NULL
-        filteredData$PERCENT_URBAN <-NULL
-        
-        colnames(filteredData)[colnames(filteredData)=="ACRES_AG"] <- "ACRES"
-        colnames(filteredData)[colnames(filteredData)=="PERCENT_AG"] <- "PERCENT" 
-      
+        colnames(shinyMap@data)[colnames(shinyMap@data)=="PERCENT_AG"] <- "PERCENT"
+
+        lab = sprintf("<strong>%s County</strong><br/>%g%% Agriculture <br/>%g Acres of Agriculture", shinyMap$NAME10, shinyMap$PERCENT, shinyMap$ACRES_AG) %>%
+          lapply(HTML)
+
       } else{
         #if they selected urban
-        filteredData$ACRES_AG <- NULL
-        filteredData$ACREs_NAT <- NULL
-        filteredData$PERCENT_AG <- NULL
-        filteredData$PERCENT_NAT <-NULL
-        
-        colnames(filteredData)[colnames(filteredData)=="ACRES_URBAN"] <- "ACRES"
-        colnames(filteredData)[colnames(filteredData)=="PERCENT_URBAN"] <- "PERCENT" 
-        
+        colnames(shinyMap@data)[colnames(shinyMap@data)=="PERCENT_URBAN"] <- "PERCENT"
+
+        lab = sprintf("<strong>%s County</strong><br/>%g%% Urban <br/>%g Urban Acres", shinyMap$NAME10, shinyMap$PERCENT, shinyMap$ACRES_URBAN) %>%
+          lapply(HTML)
+
       }
-      
-      #adjusting label to what button is selected
-      if(selected == 1){
-        lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%g Natural Acres", filteredData$CNTYS, filteredData$PERCENT, filteredData$ACRES) %>%
-          lapply(HTML)
-      } else if(selected == 2){
-        lab = sprintf("<strong>%s County</strong><br/>%g%% Agriculture <br/>%g Acres of Agriculture", filteredData$CNTYS, filteredData$PERCENT, filteredData$ACRES) %>%
-          lapply(HTML)
-      } else{
-        lab = sprintf("<strong>%s County</strong><br/>%g%% Urban <br/>%g Urban Acres", filteredData$CNTYS, filteredData$PERCENT, filteredData$ACRES) %>%
-          lapply(HTML)
-      }
-      
+
       #merging filtered data to map
-      #finalData <- merge(usMap, filteredData, by = "GEOID")
-      
-      
-      map <- leaflet(data = finalData) %>%
+      #finalData <- merge(usMap, shinyMap, by = "GEOID")
+
+
+      shinyMap <- leaflet(data = shinyMap) %>%
+        #addTiles() %>%
         addPolygons(weight = 1,
                     smoothFactor = 0.02,
                     fillOpacity = 0.9,
@@ -210,23 +193,50 @@ function(input, output, session) {
                       bringToFront = TRUE),
                     label = lab,
                     labelOptions =labelOptions(textsize = "15px")) %>%
-        
+
         addLegend(pal = pal,
                   values = ~PERCENT,
                   bins = bin,
                   opacity = 0.7,
                   title = NULL,
                   position = "bottomright")
-      
-      #filteredData <- filteredData %>% 
+
+
+
+      #shinyMap <- shinyMap %>%
         #filter(
           #PERCENT >= minPercent,
           #PERCENT <= maxPercent
         #)
-      
-      #filteredData <- as.data.frame(filteredData)
+
+      #shinyMap <- as.data.frame(shinyMap)
     })
      
+    # lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%g Natural Acres", leafMap$NAME10, leafMap$PERCENT_NAT, leafMap$ACRES_NAT) %>%
+    #   lapply(HTML)
+    # 
+    # m <- leaflet(data = leafMap) %>%
+    #   #addTiles() %>%
+    #   addPolygons(weight = 1,
+    #               smoothFactor = 0.02,
+    #               fillOpacity = 0.9,
+    #               color = ~pal(PERCENT_NAT),
+    #               highlight = highlightOptions(
+    #                 weight = 3,
+    #                 color = "#666",
+    #                 fillOpacity = 1,
+    #                 bringToFront = TRUE),
+    #               label = lab,
+    #               labelOptions =labelOptions(textsize = "15px")
+    #               ) %>%
+    #   addLegend(pal = pal,
+    #             values = ~PERCENT_NAT,
+    #             bins = bin,
+    #             opacity = 0.7,
+    #             title = NULL,
+    #             position = "bottomright")
+    # 
+    # output$shinyMap <- renderLeaflet(m)
      
     #output$testingTable <- finalData
      
