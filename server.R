@@ -54,32 +54,10 @@ function(input, output, session) {
                 PER_CHANGE <= maxPer
             ) %>%
             arrange(ACRES_CURR)
-        
-        # Optional: filter by genre
-        #if (input$genre != "All") {
-        #   genre <- paste0("%", input$genre, "%")
-        #   m <- m %>% filter(Genre %like% genre)
-        #}
-        # Optional: filter by director
-        #if (!is.null(input$director) && input$director != "") {
-        #   director <- paste0("%", input$director, "%")
-        #   m <- m %>% filter(Director %like% director)
-        #}
-        # Optional: filter by cast member
-        #if (!is.null(input$cast) && input$cast != "") {
-        #   cast <- paste0("%", input$cast, "%")
-        #   m <- m %>% filter(Cast %like% cast)
-        #}
-        
-        
+
         e <- as.data.frame(e)
         
-        # Add column which says whether the movie won any Oscars
-        # Be a little careful in case we have a zero-row data frame
-        #m$has_oscar <- character(nrow(m))
-        #m$has_oscar[m$Oscars == 0] <- "No"
-        #m$has_oscar[m$Oscars >= 1] <- "Yes"
-        #m
+        
     })
     
     # Function for generating tooltip text
@@ -87,22 +65,19 @@ function(input, output, session) {
         if (is.null(x)) return(NULL)
         if (is.null(x$CLASSNAME)) return(NULL)
         
-        # Pick out the movie with this ID
-        all_ecosystems <- isolate(ecosystems())
+        # Pick out the ecosystem with this name
+        # all_ecosystems <- isolate(ecosystems())
         ecosystem <- all_ecosystems[all_ecosystems$CLASSNAME == x$CLASSNAME, ]
         
         paste0("<b>", ecosystem$CLASSNAME, "</b>",
-               ecosystem$CURR_ACRES, "<br>",
-               format(ecosystem$ACRES_CURR, big.mark = ",", scientific = FALSE), " current acres",
+                format(ecosystem$ACRES_CURR, big.mark = ",", scientific = FALSE), " current acres",
                "<br>", format(ecosystem$ACRES_HIST, big.mark = ",", scientific = FALSE), " historical acres",
                "<br>", format(ecosystem$DIFF, big.mark = ",", scientific = FALSE), " difference in acres"
         )
     }
-    
+  
     # A reactive expression with the ggvis plot
     vis <- reactive({
-        # Lables for axes
-        
         
         # Normally we could do something like props(x = ~BoxOffice, y = ~Reviews),
         # but since the inputs are strings, we need to do a little more work.
@@ -110,18 +85,20 @@ function(input, output, session) {
         yvar <- prop("y", as.symbol("DIFF"))
         
         ecosystems %>%
-            ggvis(x = xvar, y = yvar, stroke = ~PER_CHANGE) %>%
+            ggvis(x = xvar, y = yvar, fill = ~PER_CHANGE) %>%
             layer_points(size := 50, size.hover := 200,
-                         fill = ~PER_CHANGE, fill.hover := 0.5,
+                         fill.hover := 0.5,
                          key := ~CLASSNAME) %>%
+            scale_numeric("fill",domain = c(0, 100), range = c("white", "red")) %>%
             add_tooltip(movie_tooltip, "hover") %>%
             add_axis("x", title = "Current Acres") %>%
-            add_axis("y", title = "Difference in Acres between Current and Historical",
-                     title_offset = 80, properties = axis_props(labels = )) %>%
-            #add_legend("stroke", title = "Won Oscar", values = c("Yes", "No")) %>%
+            add_axis("y", title = "Difference in Acres Current vs Historical",
+                     title_offset = 80) %>%
+            layer_rects() %>%
+            add_legend("fill", title = "Percent Change") %>%
             #scale_nominal("stroke", domain = c("Yes", "No"),
              #             range = c("orange", "#aaa")) %>%
-            set_options(width = 800, height = 500)
+            set_options(width = "auto", height = "50%")
     })
     
     vis %>% bind_shiny("plot1")
@@ -129,61 +106,100 @@ function(input, output, session) {
     output$n_ecosystems <- renderText({ nrow(ecosystems()) })
     
 
-    
-    
-    
     #CREATING MAP
     
     bin <- c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
-    
-    pal <- colorNumeric(palette = "viridis", domain = range(0,100), reverse = TRUE, na.color = "red")
-    
-    #completeData <- leafMap
-    
-    shinyMap <- leafMap
+    pal <- colorNumeric(palette = "viridis", domain = range(0,100), reverse = FALSE, na.color = "red")
+  
+    shinyMapData <- leafMap
     
     output$shinyMap <- renderLeaflet({
+      
+      # making label
+      lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%s Natural Acres", 
+                    shinyMapData$NAME10, 
+                    shinyMapData$PERCENT_NAT, 
+                    format(shinyMapData$ACRES_NAT, big.mark = ",", scientific = FALSE)) %>%
+            lapply(HTML)
+      legendTitle = "Percent of Natural Acres"
+
+     map <- leaflet(data = shinyMapData, options = leafletOptions(minZoom = 4, maxZoom = 9)) %>%
+      addProviderTiles("CartoDB.DarkMatterNoLabels") %>%
+      # addMouseCoordinates() %>%
+      setView(lng = -97.5,
+              lat = 38,
+              zoom = 5) %>%
+      setMaxBounds(lng1 = -145,
+                   lat1 = 55,
+                   lng2 = -51,
+                   lat2 = 18) %>%
+      addPolygons(weight = 1,
+                  smoothFactor = 0.02,
+                  fillOpacity = 0.9,
+                  color = ~pal(PERCENT_NAT),
+                  highlight = highlightOptions(
+                    weight = 3,
+                    color = "#666",
+                    fillOpacity = 1,
+                    bringToFront = TRUE),
+                  label = lab,
+                  labelOptions =labelOptions(textsize = "15px")) %>%
+     addLegend(pal = pal,
+               values = ~PERCENT_NAT,
+               bins = bin,
+               opacity = 0.7,
+               title = "Percent of Acres Natural",
+               position = "bottomright")
+    })
+     
+    observe({
 
       #temp variables to select data from
-      #minPercent <- input$percentSelect[1]
-      #maxPercent <- input$percentSelect[2]
       selected <- input$colorBy
-
       #make the value lab exist
       lab
-
+      legendTitle = ""
+      
       #rename selected columns and create selected labels
       if(selected == 1){
         #if they selected natural
-        colnames(shinyMap@data)[colnames(shinyMap@data)=="PERCENT_NAT"] <- "PERCENT"
-
-        lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%g Natural Acres", shinyMap$NAME10, shinyMap$PERCENT, shinyMap$ACRES_NAT) %>%
-          lapply(HTML)
+        colnames(shinyMapData)[colnames(shinyMapData)=="PERCENT_NAT"] <- "PERCENT"
+        lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%s Natural Acres", 
+                      shinyMapData$NAME10, 
+                      shinyMapData$PERCENT, 
+                      format(shinyMapData$ACRES_NAT, big.mark = ",", scientific = FALSE)) %>%
+              lapply(HTML)
+        legendTitle = "Percent of Natural Acres"
 
       } else if(selected == 2){
         #if they selected Agriculture
-        colnames(shinyMap@data)[colnames(shinyMap@data)=="PERCENT_AG"] <- "PERCENT"
-
-        lab = sprintf("<strong>%s County</strong><br/>%g%% Agriculture <br/>%g Acres of Agriculture", shinyMap$NAME10, shinyMap$PERCENT, shinyMap$ACRES_AG) %>%
-          lapply(HTML)
+        colnames(shinyMapData)[colnames(shinyMapData)=="PERCENT_AG"] <- "PERCENT"
+        lab = sprintf("<strong>%s County</strong><br/>%g%% Agriculture <br/>%s Acres of Agriculture", 
+                      shinyMapData$NAME10, 
+                      shinyMapData$PERCENT, 
+                      format(shinyMapData$ACRES_AG, big.mark = ",", scientific = FALSE)) %>%
+              lapply(HTML)
+        legendTitle = "Percent of Agricultural Acres"
 
       } else{
         #if they selected urban
-        colnames(shinyMap@data)[colnames(shinyMap@data)=="PERCENT_URBAN"] <- "PERCENT"
-
-        lab = sprintf("<strong>%s County</strong><br/>%g%% Urban <br/>%g Urban Acres", shinyMap$NAME10, shinyMap$PERCENT, shinyMap$ACRES_URBAN) %>%
-          lapply(HTML)
-
+        colnames(shinyMapData)[colnames(shinyMapData)=="PERCENT_URBAN"] <- "PERCENT"
+        lab = sprintf("<strong>%s County</strong><br/>%g%% Urban <br/>%s Urban Acres", 
+                      shinyMapData$NAME10, 
+                      shinyMapData$PERCENT, 
+                      format(shinyMapData$ACRES_URBAN, big.mark = ",", scientific = FALSE)) %>%
+              lapply(HTML)
+        legendTitle = "Percent of Urban Acres"
       }
-
-      #merging filtered data to map
-      #finalData <- merge(usMap, shinyMap, by = "GEOID")
-
-
-      shinyMap <- leaflet(data = shinyMap) %>%
-        #addTiles() %>%
+      
+     
+      
+      
+      
+      leafletProxy("shinyMap", data = shinyMapData) %>%
+        clearShapes() %>%
+        clearControls() %>%
         addPolygons(weight = 1,
-                    smoothFactor = 0.02,
                     fillOpacity = 0.9,
                     color = ~pal(PERCENT),
                     highlight = highlightOptions(
@@ -193,60 +209,13 @@ function(input, output, session) {
                       bringToFront = TRUE),
                     label = lab,
                     labelOptions =labelOptions(textsize = "15px")) %>%
-
         addLegend(pal = pal,
                   values = ~PERCENT,
                   bins = bin,
                   opacity = 0.7,
-                  title = NULL,
+                  title = legendTitle,
                   position = "bottomright")
-
-
-
-      #shinyMap <- shinyMap %>%
-        #filter(
-          #PERCENT >= minPercent,
-          #PERCENT <= maxPercent
-        #)
-
-      #shinyMap <- as.data.frame(shinyMap)
     })
-     
-    # lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%g Natural Acres", leafMap$NAME10, leafMap$PERCENT_NAT, leafMap$ACRES_NAT) %>%
-    #   lapply(HTML)
-    # 
-    # m <- leaflet(data = leafMap) %>%
-    #   #addTiles() %>%
-    #   addPolygons(weight = 1,
-    #               smoothFactor = 0.02,
-    #               fillOpacity = 0.9,
-    #               color = ~pal(PERCENT_NAT),
-    #               highlight = highlightOptions(
-    #                 weight = 3,
-    #                 color = "#666",
-    #                 fillOpacity = 1,
-    #                 bringToFront = TRUE),
-    #               label = lab,
-    #               labelOptions =labelOptions(textsize = "15px")
-    #               ) %>%
-    #   addLegend(pal = pal,
-    #             values = ~PERCENT_NAT,
-    #             bins = bin,
-    #             opacity = 0.7,
-    #             title = NULL,
-    #             position = "bottomright")
-    # 
-    # output$shinyMap <- renderLeaflet(m)
-     
-    #output$testingTable <- finalData
-     
-     
     
-    
-    
-   
-    
-    
-  
         
 }
