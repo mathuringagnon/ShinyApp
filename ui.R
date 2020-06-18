@@ -13,44 +13,25 @@ library(shinythemes)
 #}
 
 
-navbarPage("US Land Exploration",
+navbarPage("Exploration of US Land",
     
    theme = shinytheme("darkly"),
+   tabPanel("Home",
+            titlePanel("     testing")
+   ),
    tabPanel("Graph", 
-        titlePanel("Ecosystem explorer"),
+        titlePanel("Ecosystem Explorer"),
         fluidRow(
             column(3,
                    wellPanel(
                        h4("Filter"),
                        sliderInput("diff", "Minimum number of disturbed acres (millions)",
                                    0, 51, 0, step = .01),
-                       #sliderInput("year", "Year released", 1940, 2014, value = c(1970, 2014),
-                        #           sep = ""),
-                       #sliderInput("oscars", "Minimum number of Oscar wins (all categories)",
-                                  # 0, 4, 0, step = 1),
                        sliderInput("curAcres", "Current Acres (millions)",
                                    0, 65, c(0, 70), step = .01),
                        sliderInput("perChange", "Percent change",
                                    0, 100, c(0, 100), step = .01),
-                       #selectInput("genre", "Genre (a movie can have multiple genres)",
-                        #           c("All", "Action", "Adventure", "Animation", "Biography", "Comedy",
-                        #             "Crime", "Documentary", "Drama", "Family", "Fantasy", "History",
-                        #             "Horror", "Music", "Musical", "Mystery", "Romance", "Sci-Fi",
-                        #             "Short", "Sport", "Thriller", "War", "Western")
-                       #),
-                       #textInput("director", "Director name contains (e.g., Miyazaki)"),
-                       #textInput("cast", "Cast names contains (e.g. Tom Hanks)")
                    ),
-                   #wellPanel(
-                    #   selectInput("xvar", "X-axis variable", axis_vars, selected = "Meter"),
-                    #   selectInput("yvar", "Y-axis variable", axis_vars, selected = "Reviews"),
-                    #   tags$small(paste0(
-                        #   "Note: The Tomato Meter is the proportion of positive reviews",
-                        #   " (as judged by the Rotten Tomatoes staff), and the Numeric rating is",
-                        #   " a normalized 1-10 score of those reviews which have star ratings",
-                        #   " (for example, 3 out of 4 stars)."
-                      # ))
-                  # )
             ),
             column(9,
                    wellPanel(ggvisOutput("plot1")
@@ -81,5 +62,7 @@ navbarPage("US Land Exploration",
             #            0, 100, c(0, 100), step = 0.01),
             #span("Number of Counties Shown: ", textOutput("n_counties"))
         )
+    ),
+    tabPanel("About",
     )
 )

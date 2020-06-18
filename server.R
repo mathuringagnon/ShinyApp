@@ -12,30 +12,14 @@ if(FALSE) {
     library(dbplyr)
 }
 
-# Set up handles to database tables on app start
-#db <- src_sqlite("movies.db")
-#omdb <- tbl(db, "omdb")
-#tomatoes <- tbl(db, "tomatoes")
-
-# Join tables, filtering out those with <10 reviews, and select specified columns
-#all_movies <- inner_join(omdb, tomatoes, by = "ID") %>%
- #   filter(Reviews >= 10) %>%
- #   select(ID, imdbID, Title, Year, Rating_m = Rating.x, Runtime, Genre, Released,
-  #         Director, Writer, imdbRating, imdbVotes, Language, Country, Oscars,
-  #         Rating = Rating.y, Meter, Reviews, Fresh, Rotten, userMeter, userRating, userReviews,
-  #         BoxOffice, Production, Cast)
 all_ecosystems <- comp
 
 function(input, output, session) {
 
   
-    # Filter the movies, returning a data frame
+    # Filter the ecosystems, returns a data frame
     ecosystems <- reactive({
-        # Due to dplyr issue #318, we need temp variables for input values
         difference <- input$diff * 1000000
-        # oscars <- input$oscars
-        #minyear <- input$year[1]
-        #maxyear <- input$year[2]
         minCurAcres <- input$curAcres[1] * 1e6
         maxCurAcres <- input$curAcres[2] * 1e6
         minPer <- input$perChange[1]
@@ -45,9 +29,6 @@ function(input, output, session) {
         e <- all_ecosystems %>%
             filter(
                 DIFF >= difference,
-                #Oscars >= oscars,
-                #Year >= minyear,
-                #Year <= maxyear,
                 ACRES_CURR >= minCurAcres,
                 ACRES_CURR <= maxCurAcres,
                 PER_CHANGE >= minPer,
@@ -79,8 +60,6 @@ function(input, output, session) {
     # A reactive expression with the ggvis plot
     vis <- reactive({
         
-        # Normally we could do something like props(x = ~BoxOffice, y = ~Reviews),
-        # but since the inputs are strings, we need to do a little more work.
         xvar <- prop("x", as.symbol("ACRES_CURR"))
         yvar <- prop("y", as.symbol("DIFF"))
         
@@ -96,8 +75,6 @@ function(input, output, session) {
                      title_offset = 80) %>%
             layer_rects() %>%
             add_legend("fill", title = "Percent Change") %>%
-            #scale_nominal("stroke", domain = c("Yes", "No"),
-             #             range = c("orange", "#aaa")) %>%
             set_options(width = "auto", height = "50%")
     })
     
