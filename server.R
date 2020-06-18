@@ -38,22 +38,21 @@ function(input, output, session) {
 
         e <- as.data.frame(e)
         
+        e
         
     })
     
     # Function for generating tooltip text
-    movie_tooltip <- function(x) {
-        if (is.null(x)) return(NULL)
-        if (is.null(x$CLASSNAME)) return(NULL)
-        
+    tooltip <- function(x) {
+
         # Pick out the ecosystem with this name
-        # all_ecosystems <- isolate(ecosystems())
+        all_ecosystems <- isolate(ecosystems())
         ecosystem <- all_ecosystems[all_ecosystems$CLASSNAME == x$CLASSNAME, ]
         
-        paste0("<b>", ecosystem$CLASSNAME, "</b>",
-                format(ecosystem$ACRES_CURR, big.mark = ",", scientific = FALSE), " current acres",
-               "<br>", format(ecosystem$ACRES_HIST, big.mark = ",", scientific = FALSE), " historical acres",
-               "<br>", format(ecosystem$DIFF, big.mark = ",", scientific = FALSE), " difference in acres"
+        paste0("<div style = 'color:#000000'><b>", ecosystem$CLASSNAME, " </b><br>",
+                format(ecosystem$ACRES_CURR, big.mark = ",", scientific = FALSE), " current acres,",
+               "<br>", format(ecosystem$ACRES_HIST, big.mark = ",", scientific = FALSE), " historical acres,",
+               "<br>", format(ecosystem$DIFF, big.mark = ",", scientific = FALSE), " difference in acres."
         )
     }
   
@@ -68,12 +67,11 @@ function(input, output, session) {
             layer_points(size := 50, size.hover := 200,
                          fill.hover := 0.5,
                          key := ~CLASSNAME) %>%
+            add_tooltip(tooltip, "hover") %>%
             scale_numeric("fill",domain = c(0, 100), range = c("white", "red")) %>%
-            add_tooltip(movie_tooltip, "hover") %>%
             add_axis("x", title = "Current Acres") %>%
             add_axis("y", title = "Difference in Acres Current vs Historical",
                      title_offset = 80) %>%
-            layer_rects() %>%
             add_legend("fill", title = "Percent Change") %>%
             set_options(width = "auto", height = "50%")
     })

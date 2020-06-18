@@ -47,7 +47,6 @@ comp$DIFF <- abs(comp$ACRES_HIST - comp$ACRES_CURR)
 comp$PER_CHANGE <- round((comp$DIFF / comp$ACRES_HIST) * 100, 2)
 
 
-# make ACRES_CURR better to read for smaller
 
 
 

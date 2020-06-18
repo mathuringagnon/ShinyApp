@@ -17,7 +17,7 @@ navbarPage("Exploration of US Land",
     
    theme = shinytheme("darkly"),
    tabPanel("Home",
-            titlePanel("     testing")
+            titlePanel("testing")
    ),
    tabPanel("Graph", 
         titlePanel("Ecosystem Explorer"),
@@ -64,5 +64,6 @@ navbarPage("Exploration of US Land",
         )
     ),
     tabPanel("About",
+             #this page has about what code we used how we created this page
     )
 )
