@@ -246,13 +246,8 @@ completeMap$TOTAL <- completeMap$TOTAL *0.222
 
 ```{r}
 library(sf)
-library(ggplot2)
-library(rgeos)
-library(rgdal)
-library(maptools)
 library(dplyr)
 library(leaflet)
-library(scales)
 
 
 
@@ -267,19 +262,31 @@ usMap <- st_read(dsn = "./tl_2019_us_county.shp", layer ="tl_2019_us_county", st
 usMap <- usMap[!usMap$STATEFP %in% c("02", "15", "72", "66", "78", "60", "69", "64", "68", "70", "74"),]
 
 usMap <- usMap[!usMap$STATEFP %in% c("81", "84", "86", "87", "89", "71", "76", "95", "79"),]
-# 
-# #counties <- st_read("tl_2019_us_county.shp")
-# 
-# #renaming GEOID10 to GEOID in completeMap data set to prepare for merge
-# colnames(completeMap)[colnames(completeMap)=="GEOID10"] <- "GEOID"
-# 
-# #add leading zeos to any FIPS code that's less than 5 digits long to get a good match.
-# completeMap$GEOID <- formatC(completeMap$GEOID, width = 5, format = "d", flag = "0")
-# 
-# 
-# 
-# leafMap <- merge(usMap, completeMap, by = "GEOID") 
-# #make a jankey map (will have AK and other areas so will look too spread out, but you get the idea)
+
+counties <- st_read("tl_2019_us_county.shp")
+
+# renaming GEOID10 to GEOID in completeMap data set to prepare for merge
+colnames(completeMap)[colnames(completeMap)=="GEOID10"] <- "GEOID"
+
+#add leading zeos to any FIPS code that's less than 5 digits long to get a good match.
+completeMap$GEOID <- formatC(completeMap$GEOID, width = 5, format = "d", flag = "0")
+
+
+usMap$NAME <- NULL
+usMap$NAMELSAD <- NULL
+usMap$LSAD <- NULL
+usMap$CLASSFP <- NULL
+usMap$MTFCC <- NULL
+usMap$CSAFP <- NULL
+usMap$CBSAFP <- NULL
+usMap$METDIVFP <- NULL
+usMap$FUNCSTAT  <- NULL
+usMap$ALAND  <- NULL
+usMap$AWATER  <- NULL
+
+
+leafMap <- merge(usMap, completeMap, by = "GEOID")
+#make a jankey map (will have AK and other areas so will look too spread out, but you get the idea)
 
  
 #making a map
@@ -298,6 +305,8 @@ library(dplyr)
 library(leaflet)
 #plot(usMap)
 
+
+
 #colnames(leafMap@data)[colnames(leafMap@data)=="ACRES_AG"] <- "ACRES"
 
 #filteredData <- completeMap[-c(6, 7, 10, 9)]
@@ -305,9 +314,12 @@ library(leaflet)
 #making a color Palette
 bin <- c(0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100)
 
+# sf layer has inconsistent datum (+proj=longlat +datum=NAD83 +no_defs ).
+#Need '+proj=longlat +datum=WGS84'
+
 pal <- colorNumeric(palette = "viridis", domain = range(0,100), reverse = TRUE, na.color = "red")
 
-lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%g Natural Acres", leafMap$NAME10, leafMap$PERCENT_NAT, leafMap$ACRES_NAT) %>%
+lab = sprintf("<strong>%s County</strong><br/>%g%% Natural <br/>%g Natural Acres", leafMap$CNTYS, leafMap$PERCENT_NAT, leafMap$ACRES_NAT) %>%
     lapply(HTML)
 
 
