@@ -17,7 +17,25 @@ navbarPage("Exploration of US Land",
     
    theme = shinytheme("darkly"),
    tabPanel("Home",
-            titlePanel("testing")
+            fluidRow(
+              column(10, align="left", offset = 1,
+                     tags$h1(
+                       tags$b("Land use and ecosystem loss in the lower 48 states"
+                       )
+                     ),
+                     tags$h3(
+                        tags$p("In recent centuries technology has vastly improved, aiding in the explosion of the human population which,
+                               now in 2020, has surpassed 7.6 billion globally. This explosion of population has undoubtedly affected many ecosystems,
+                               and as humans continue to expand agricultural and urban land use, examining which ecosystems have been impacted is becoming 
+                               increasingly urgent. ", "text-indent: 1.5em"
+                              ),
+                        tags$br(),
+                        tags$p("   The United States is the fourth largest country in the world and has 2.3 billion acres of land, with the lower 48 states comprising
+                                1.9 billion of those acres. In our web app we explore how the ~1,000 ecosystems of the US have changed, where the changes have been 
+                                the greatest, as well as how the land of the US has is used between urban settings, agriculture, and natural.")
+                     )
+              )
+            )
    ),
    tabPanel("Graph", 
         titlePanel("Ecosystem Explorer"),

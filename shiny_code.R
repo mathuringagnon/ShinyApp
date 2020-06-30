@@ -202,9 +202,6 @@ usMap <- st_read(dsn = "./UScounties.shp", stringsAsFactors = FALSE)
 #rename FIPS to GEOID
 colnames(usMap)[colnames(usMap)=="FIPS"] <- "GEOID"
 
-# give usMap projection info for map
-# something like:
-#usMap <- st_transform(usMap, "+proj=longlat+datum=WGS84")
 
 # Taking out Hawaii and Alaskan counties
 usMap <- usMap %>%
@@ -224,9 +221,6 @@ usMap$STATE_FIPS <- NULL
 
 
 # simplifying the geometry of the sf file
-#usMapSimple <-  ms_simplify(usMap, keep = 0.05, keep_shapes = TRUE)
 
 leafMap <- merge(usMap, completeMap, by = "GEOID", all.x = FALSE)
-
-#leafMap <- arrange(leafMap, CNTYS)
 
