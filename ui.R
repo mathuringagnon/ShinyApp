@@ -115,13 +115,31 @@ navbarPage("Exploration of US Land",
                       ),
                       tags$h3(
                         tags$ul(
-                          tags$li('LANDFIRE Biophysical Settings for historical ecosystems and Existing Vegetation Types for conversion ', tags$br(), '(learn more at ',
+                          tags$li('LANDFIRE Biophysical Settings for historical ecosystems and Existing Vegetation Types for conversion (learn more at ',
                             tags$a(href = 'https://www.landfire.gov/', 'www.landfire.gov'), ').' 
                           ),
                           tags$br(),
                           tags$li('US County Shape File ', tags$a( href = 'https://community.esri.com/thread/24614/', 'download '), 'page.'),
                           tags$br(),
-                          tags$li('US County Data can be found ', tags$a(href = 'https://www.google.com/', 'here'), ".")
+                          tags$li('US County Data can be found ', tags$a(href = 'https://www.google.com/', 'here'), "."),
+                          tags$br()
+                        )
+                      ),
+                      tags$h1(
+                        tags$b('Photo Credit:')
+                      ),
+                      tags$h3(
+                        tags$ul(
+                          tags$li('Photo of Green Field Near Mountains: Photo by ', tags$a(href = 'https://www.pexels.com/@burst', 'Burst'), ' via ', 
+                                  tags$a(href = 'https://www.pexels.com/', 'pexels'), '.'),
+                          tags$br(),
+                          tags$li('Aerial Photo of City Commercial Buildings: Photo by ', tags$a(href = 'https://www.pexels.com/@timmossholder', 'Tim Mossholder'), ' via ', 
+                                  tags$a(href = 'https://www.pexels.com/', 'pexels'), '.'),
+                          tags$br(),
+                          tags$li('Green Leafed Tree: Photo by ', tags$a(href = 'https://www.pexels.com/@veeterzy', 'Veeterzy'), ' via ', 
+                                  tags$a(href = 'https://www.pexels.com/', 'pexels'), '.'),
+                          tags$br(),
+                          tags$br()
                         )
                       )
                ),
