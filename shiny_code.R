@@ -9,9 +9,13 @@ library(plotly)
 library(rmapshaper)
 library(rgeos)
 library(sp)
+library(readr)
 
 # Graph Data Prep
 
+UsedData <- read_csv("UsedData.csv", col_types = cols(AG = col_number(), 
+                                                      DEV = col_number(), NotAG_DEV = col_number(), 
+                                                      ORIGINAL = col_number()))
 
 
 comp <- UsedData
@@ -28,31 +32,22 @@ colnames(comp)[colnames(comp)=="BPS_NAME"] <- "CLASSNAME"
 
 comp <- arrange(comp, CLASSNAME)
 
-#removing weird row
-
-#comp <- comp[-c(393), -c(5)]
-
-#assigning NA values to 0 in AG and DEV rows
-
-comp[c("AG", "DEV")][is.na(comp[c("AG", "DEV")])] <- 0
-
-
-
 #adding diff column
+#comp <- mutate(comp, DIFF = Acres)
 
-comp$DIFF <- abs(comp$ACRES_HIST - comp$ACRES_CURR)
+comp$DIFF <- abs(as.numeric(comp$ACRES_HIST) - as.numeric(comp$ACRES_CURR))
 
 #adding percent change column
 
 comp$PER_CHANGE <- round((comp$DIFF / comp$ACRES_HIST) * 100, 2)
 
 
-
+write.csv(comp, file = "./comp.csv")
 
 
 # Map Data Prep
 
-
+MapData <- read_csv('MapData.csv')
 
 #Preparing Map Data for use
 allDataMap <- MapData
@@ -162,33 +157,33 @@ completeMap <- spread(completeMap, key = LABEL, value = COUNT)
 
 
 #rename columns to make more sense (Says ACRES but for now it's the original pixel count value)
-colnames(completeMap)[colnames(completeMap)=="Agriculture"] <- "ACRES_AG"
+colnames(completeMap)[colnames(completeMap)=="Agriculture"] <- "ACRES_A"
 
-colnames(completeMap)[colnames(completeMap)=="Natural"] <- "ACRES_NAT"
+colnames(completeMap)[colnames(completeMap)=="Natural"] <- "ACRES_N"
 
-colnames(completeMap)[colnames(completeMap)=="Urban"] <- "ACRES_URBAN"
+colnames(completeMap)[colnames(completeMap)=="Urban"] <- "ACRES_U"
 
 # turn NA values in ACRES_AG to zero
-completeMap[c("ACRES_AG")][is.na(completeMap[c("ACRES_AG")])] <- 0
+completeMap[c("ACRES_A")][is.na(completeMap[c("ACRES_A")])] <- 0
 
 #changing acres columns to acutal acres values using the conversion of 0.222
 
 
 # round values to integers
-completeMap$ACRES_AG <- round(completeMap$ACRES_AG, digits = 0)
+completeMap$ACRES_A <- round(completeMap$ACRES_AG, digits = 0)
 
-completeMap$ACRES_NAT <- round(completeMap$ACRES_NAT, digits = 0)
+completeMap$ACRES_N <- round(completeMap$ACRES_NAT, digits = 0)
 
-completeMap$ACRES_URBAN <- round(completeMap$ACRES_URBAN, digits = 0)
+completeMap$ACRES_U <- round(completeMap$ACRES_URBAN, digits = 0)
 
 completeMap$TOTAL <- round(completeMap$TOTAL, digits = 0)
 
 #math to add percent columns
-completeMap$PERCENT_AG <- round(completeMap$ACRES_AG/completeMap$TOTAL *100, 2) 
+completeMap$PERCENT_A <- round(completeMap$ACRES_AG/completeMap$TOTAL *100, 2) 
 
-completeMap$PERCENT_URBAN <- round(completeMap$ACRES_URBAN/completeMap$TOTAL *100, 2) 
+completeMap$PERCENT_U <- round(completeMap$ACRES_URBAN/completeMap$TOTAL *100, 2) 
 
-completeMap$PERCENT_NAT <- round(completeMap$ACRES_NAT/completeMap$TOTAL *100, 2) 
+completeMap$PERCENT_N <- round(completeMap$ACRES_NAT/completeMap$TOTAL *100, 2) 
 
 
 
@@ -223,4 +218,12 @@ usMap$STATE_FIPS <- NULL
 # simplifying the geometry of the sf file
 
 leafMap <- merge(usMap, completeMap, by = "GEOID", all.x = FALSE)
+
+# changing names of shapefile data so no names change automatically after writing it to a .shp file
+colnames(leafMap)[colnames(leafMap)=="STATE_NAME"] <- "STATE_N"
+colnames(leafMap)[colnames(leafMap)=="CNTY_FIP"] <- "CNTY_FI"
+
+st_write(leafMap, dsn = 'leafMap.shp', driver = 'ESRI Shapefile')
+
+
 
