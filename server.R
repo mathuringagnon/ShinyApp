@@ -14,7 +14,7 @@ if(FALSE) {
   library(dbplyr)
 }
 
-read_csv('comp.csv')
+comp <- read_csv('comp.csv')
 
 all_ecosystems <- comp
 
